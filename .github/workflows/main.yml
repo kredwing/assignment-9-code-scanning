@@ -34,11 +34,11 @@ jobs:
           name: trivy-results
           path: trivy-results.sarif
 
-  # === Part 2: Container Image Scan (Docker Scout) ===
+# --- Part 2: Image scan (Docker Scout) ---
   image_scan:
     name: Build Image and Run Image Scan
     runs-on: ubuntu-latest
-    environment: scan
+    environment: scan  # <-- must exactly match the environment name
     steps:
     - uses: actions/checkout@v4
 
@@ -52,10 +52,16 @@ jobs:
         tags: pygoat_app:latest
         load: true
 
+    # Debug: prove secrets exist without printing them
     - name: Check secrets exist (env)
+      env:
+        U: ${{ secrets.DOCKERHUB_USER }}
+        P: ${{ secrets.DOCKERHUB_PAT }}
       run: |
-        [ -n "${{ secrets.DOCKERHUB_USER }}" ] || (echo "Missing DOCKERHUB_USER" && exit 1)
-        [ -n "${{ secrets.DOCKERHUB_PAT }}"  ] || (echo "Missing DOCKERHUB_PAT"  && exit 1)
+        echo "Len(DOCKERHUB_USER) = ${#U}"
+        echo "Len(DOCKERHUB_PAT)  = ${#P}"
+        [ -n "$U" ] || (echo "Missing DOCKERHUB_USER" && exit 1)
+        [ -n "$P" ] || (echo "Missing DOCKERHUB_PAT" && exit 1)
 
     - name: Docker Login
       run: echo "${{ secrets.DOCKERHUB_PAT }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
@@ -73,4 +79,5 @@ jobs:
       with:
         name: docker-scout-findings
         path: scout-report.sarif
+
 
