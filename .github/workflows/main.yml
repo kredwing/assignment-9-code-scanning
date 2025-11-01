@@ -53,6 +53,11 @@ jobs:
           load: true  # make the image available locally for scanning
 
       # Explicit login so Scout can authenticate to Docker Hub
+      - name: Check secrets exist
+        run: |
+          test -n "${{ secrets.REPO_USER }}" || (echo "Missing REPO_USER" && exit 1)
+          test -n "${{ secrets.REPO_PWD }}"  || (echo "Missing REPO_PWD" && exit 1)
+      
       - name: Docker Login
         run: echo "${{ secrets.REPO_PWD }}" | docker login -u "${{ secrets.REPO_USER }}" --password-stdin
 
