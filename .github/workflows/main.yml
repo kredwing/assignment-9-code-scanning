@@ -38,39 +38,39 @@ jobs:
   image_scan:
     name: Build Image and Run Image Scan
     runs-on: ubuntu-latest
+    environment: scan
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-      - name: Build image (local)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          tags: pygoat_app:latest
-          load: true  # make the image available locally for scanning
+    - name: Build image (local)
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        tags: pygoat_app:latest
+        load: true
 
-      # Explicit login so Scout can authenticate to Docker Hub
-      - name: Check secrets exist
-        run: |
-          test -n "${{ secrets.REPO_USER }}" || (echo "Missing REPO_USER" && exit 1)
-          test -n "${{ secrets.REPO_PWD }}"  || (echo "Missing REPO_PWD" && exit 1)
-      
-      - name: Docker Login
-        run: echo "${{ secrets.REPO_PWD }}" | docker login -u "${{ secrets.REPO_USER }}" --password-stdin
+    - name: Check secrets exist (env)
+      run: |
+        [ -n "${{ secrets.DOCKERHUB_USER }}" ] || (echo "Missing DOCKERHUB_USER" && exit 1)
+        [ -n "${{ secrets.DOCKERHUB_PAT }}"  ] || (echo "Missing DOCKERHUB_PAT"  && exit 1)
 
-      - name: Docker Scout scan
-        uses: docker/scout-action@v1.6.4
-        with:
-          image: pygoat_app:latest
-          command: cves
-          only-severities: critical,high
-          sarif-file: scout-report.sarif
+    - name: Docker Login
+      run: echo "${{ secrets.DOCKERHUB_PAT }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4.4.3
-        with:
-          name: docker-scout-findings
-          path: scout-report.sarif
+    - name: Docker Scout scan
+      uses: docker/scout-action@v1.6.4
+      with:
+        image: pygoat_app:latest
+        command: cves
+        only-severities: critical,high
+        sarif-file: scout-report.sarif
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4.4.3
+      with:
+        name: docker-scout-findings
+        path: scout-report.sarif
+
